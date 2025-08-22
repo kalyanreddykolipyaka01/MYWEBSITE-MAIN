@@ -1,96 +1,124 @@
 /* =========================================
-   California Trip — script.js
+   California Trip — script.js (Firebase sync)
 ========================================= */
 
-/* ===== 17 people (first 5 letters code) ===== */
+/* ===== 17 people (first 5 letters code) =====
+   Using the exact mapping you provided (case-insensitive codes) */
 const PEOPLE = [
-  { code: "NIKHI", name: "NIKHITHA REDD" },
+  { code: "NIKHI", name: "NIKHITHARED" },
   { code: "KEERT", name: "KEERTHI" },
   { code: "KALYA", name: "KALYANRE" },
-  { code: "DINES", name: "DINESH KUMAR" },
+  { code: "DINES", name: "DINESHKUMAR" },
   { code: "SRIKA", name: "SRIKANTH" },
   { code: "ABHIS", name: "ABHISH" },
   { code: "SEVIK", name: "SEVIKA" },
   { code: "VAISH", name: "VAISHNAVI" },
   { code: "PRASH", name: "PRASHAN" },
-  { code: "TEJAS", name: "TEJASWI REDDY" },
+  { code: "TEJAS", name: "TEJASWIREDDY" },
   { code: "CHARA", name: "CHARANRE" },
   { code: "SRINI", name: "SRINIKA" },
   { code: "SANDE", name: "SANDEEP" },
   { code: "PRUDH", name: "PRUDHVI" },
   { code: "SRIJA", name: "SRIJA" },
-  { code: "VIVEK", name: "VIVEK REDDY" },
+  { code: "VIVEK", name: "VIVEKREDDY" },
   { code: "THIRU", name: "THIRUMALA" }
 ];
 
-/* ===== Storage keys ===== */
-const LS_RESPONSES = "trip_responses"; // { [code]: {status, ts} }
-const LS_CURRENT   = "currentUserCode"; // "NIKHI", ...
+/* ===== Local-only keys ===== */
+const LS_CURRENT = "currentUserCode"; // remember who is logged-in on this device
+
+/* ===== Cached shared responses (from Firebase) =====
+   Shape: { [code]: {status: "Interested"|"Not Interested", ts: ISOString} } */
+let RESPONSES_CACHE = {};
 
 /* ===== DOM helpers ===== */
 const $  = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
 
+/* ===== Firebase helpers ===== */
+function getDB() {
+  try {
+    // will throw if firebase not loaded or not initialized
+    return firebase?.database();
+  } catch { return null; }
+}
+async function fbSaveResponse(code, status) {
+  const db = getDB();
+  const ts = new Date().toISOString();
+  if (!db) {
+    // no firebase configured → update cache only (not cross-device)
+    RESPONSES_CACHE[code] = { status, ts };
+    return;
+  }
+  await db.ref(`responses/${code}`).set({ status, ts });
+}
+function fbSubscribeResponses(onChange) {
+  const db = getDB();
+  if (!db) {
+    // no realtime subscription without Firebase
+    onChange(RESPONSES_CACHE);
+    return () => {};
+  }
+  const ref = db.ref("responses");
+  ref.on("value", snap => onChange(snap.val() || {}));
+  return () => ref.off();
+}
+async function fbGetResponsesOnce() {
+  const db = getDB();
+  if (!db) return RESPONSES_CACHE;
+  const snap = await db.ref("responses").get();
+  return snap.val() || {};
+}
+
+/* ===== Boot ===== */
 document.addEventListener("DOMContentLoaded", () => {
   setupStartScreen();
   buildPeopleGrid();
   wireNavigation();
   decideInitialScreen();
+
+  // Live-sync: update UI whenever responses change in Firebase
+  fbSubscribeResponses((all) => {
+    RESPONSES_CACHE = all || {};
+    updatePeopleBadges();
+    if ($("#screen-emergency")?.classList.contains("active")) {
+      renderEmergencyWithData(RESPONSES_CACHE);
+    }
+  });
 });
 
 /* ===== Router ===== */
 function show(id) {
   $$(".screen").forEach(s => s.classList.remove("active"));
-  const node = document.getElementById(id);
-  if (node) node.classList.add("active");
+  $("#" + id)?.classList.add("active");
   if (id === "screen-emergency") renderEmergency();
 }
-
 function decideInitialScreen() {
   const savedUser = localStorage.getItem(LS_CURRENT);
-  if (savedUser && PEOPLE.find(p => p.code === savedUser)) {
-    // Returning user → skip to Emergency
-    show("screen-emergency");
-  } else {
-    show("screen-start");
-  }
+  if (savedUser && PEOPLE.find(p => p.code === savedUser)) show("screen-emergency");
+  else show("screen-start");
 }
 
 /* ===== Screen 1: 4 checkboxes gate ===== */
 function setupStartScreen() {
   const btn   = $("#btn-start-continue");
   const boxes = $$(".ack");
-
-  if (!btn || boxes.length < 4) return;
-
-  const update = () => {
-    btn.disabled = !boxes.every(b => b.checked);
-  };
-
-  // initial + listeners
+  if (!btn) return;
+  const update = () => { btn.disabled = !boxes.every(b => b.checked); };
   update();
-  boxes.forEach(b => {
-    b.addEventListener("change", update);
-    b.addEventListener("input", update);
-  });
-
-  btn.addEventListener("click", (e) => {
-    e.preventDefault();
-    show("screen-response");
-  });
+  boxes.forEach(b => { b.addEventListener("change", update); b.addEventListener("input", update); });
+  btn.addEventListener("click", (e)=>{ e.preventDefault(); show("screen-response"); });
 }
 
-/* ===== Screen 2: Response ===== */
+/* ===== Screen 2: Response (login + choose) ===== */
 function buildPeopleGrid() {
   const grid = $("#people-grid");
   if (!grid) return;
-
   grid.innerHTML = "";
-  const responses = readResponses();
   const current = localStorage.getItem(LS_CURRENT);
 
   PEOPLE.forEach(person => {
-    const status = responses[person.code]?.status ?? "Pending";
+    const status = (RESPONSES_CACHE[person.code]?.status) || "Pending";
 
     const card = document.createElement("div");
     card.className = "person";
@@ -119,37 +147,31 @@ function buildPeopleGrid() {
     bNo.className = "btn";
     bNo.textContent = "Not Interested";
 
-    bYes.addEventListener("click", () => saveResponse(person.code, "Interested", badge));
-    bNo.addEventListener("click", () => saveResponse(person.code, "Not Interested", badge));
+    bYes.addEventListener("click", async () => {
+      await saveResponse(person.code, "Interested", badge);
+    });
+    bNo.addEventListener("click", async () => {
+      await saveResponse(person.code, "Not Interested", badge);
+    });
 
-    group.appendChild(bYes);
-    group.appendChild(bNo);
+    group.appendChild(bYes); group.appendChild(bNo);
 
-    card.appendChild(title);
-    card.appendChild(help);
-    card.appendChild(badge);
-    card.appendChild(group);
+    card.appendChild(title); card.appendChild(help); card.appendChild(badge); card.appendChild(group);
     grid.appendChild(card);
   });
 
-  // lock/unlock based on who validated
+  // lock all, then unlock only the validated user (if any)
   lockAllCards(true);
-  const currentCode = current ?? null;
-  if (currentCode) unlockCard(currentCode);
+  if (current) unlockCard(current);
 
   // wire login + next + reset
-  const validateBtn = $("#btn-validate");
-  const nextBtn = $("#btn-response-next");
-  const resetBtn = $("#btn-reset");
-  if (validateBtn) validateBtn.onclick = onValidateCode;
-  if (nextBtn) nextBtn.onclick = () => show("screen-emergency");
-  if (resetBtn) resetBtn.onclick = resetCurrentUser;
+  $("#btn-validate")?.addEventListener("click", onValidateCode);
+  $("#btn-response-next")?.addEventListener("click", () => show("screen-emergency"));
+  $("#btn-reset")?.addEventListener("click", resetCurrentUser);
 }
 
 function lockAllCards(lock=true){
-  $$("#people-grid .person .btn-group").forEach(g => {
-    g.querySelectorAll("button").forEach(b => b.disabled = lock);
-  });
+  $$("#people-grid .person .btn-group button").forEach(b => b.disabled = lock);
 }
 function unlockCard(code){
   $$("#people-grid .person").forEach(card=>{
@@ -157,13 +179,25 @@ function unlockCard(code){
     card.querySelectorAll(".btn-group button").forEach(b => b.disabled = lock);
   });
 }
+function updatePeopleBadges(){
+  $$("#people-grid .person").forEach(card=>{
+    const code = card.dataset.code;
+    const badge = card.querySelector(".badge");
+    const status = (RESPONSES_CACHE[code]?.status) || "Pending";
+    badge.className = "badge " + (
+      status === "Interested" ? "ok" :
+      status === "Not Interested" ? "no" : "pending"
+    );
+    badge.textContent = status;
+  });
+}
 
 function onValidateCode() {
   const input    = $("#code-input");
   const feedback = $("#code-feedback");
   const code = (input?.value || "").trim().toUpperCase();
-  const match = PEOPLE.find(p => p.code === code);
 
+  const match = PEOPLE.find(p => p.code === code);
   if (!match) {
     feedback.textContent = "Not found. Enter the first 5 letters of your first name (case-insensitive).";
     feedback.className = "feedback err";
@@ -178,28 +212,40 @@ function onValidateCode() {
   unlockCard(code);
 }
 
-function saveResponse(code, status, badgeEl) {
-  const responses = readResponses();
-  responses[code] = { status, ts: new Date().toISOString() };
-  localStorage.setItem(LS_RESPONSES, JSON.stringify(responses));
+async function saveResponse(code, status, badgeEl) {
+  // optimistic UI
   badgeEl.className = "badge " + (status === "Interested" ? "ok" : "no");
   badgeEl.textContent = status;
+
+  await fbSaveResponse(code, status);
+
+  // Update local cache immediately for fallback cases
+  RESPONSES_CACHE[code] = { status, ts: new Date().toISOString() };
+
+  // If emergency screen is open, refresh it
+  if ($("#screen-emergency")?.classList.contains("active")) {
+    renderEmergencyWithData(RESPONSES_CACHE);
+  }
 }
 
 function resetCurrentUser() {
   localStorage.removeItem(LS_CURRENT);
-  const feedback = $("#code-feedback");
-  if (feedback) { feedback.textContent = ""; feedback.className = "feedback"; }
-  const input = $("#code-input"); if (input) input.value = "";
+  $("#code-feedback").textContent = "";
+  $("#code-feedback").className = "feedback";
+  $("#code-input").value = "";
   lockAllCards(true);
 }
 
 /* ===== Screen 3: Emergency + Table + Gate ===== */
-function renderEmergency() {
+async function renderEmergency() {
+  const all = await fbGetResponsesOnce();
+  RESPONSES_CACHE = all || RESPONSES_CACHE;
+  renderEmergencyWithData(RESPONSES_CACHE);
+}
+
+function renderEmergencyWithData(responses) {
   const tbody = $("#responses-table tbody");
   if (!tbody) return;
-
-  const responses = readResponses();
   tbody.innerHTML = "";
 
   PEOPLE.forEach((p, i) => {
@@ -210,7 +256,7 @@ function renderEmergency() {
     tbody.appendChild(tr);
   });
 
-  // Gate
+  // Gate message
   const notReady = PEOPLE.filter(p => (responses[p.code]?.status || "Pending") !== "Interested");
   const banner = $("#gate-banner");
   if (banner) {
@@ -225,31 +271,27 @@ function renderEmergency() {
 
   // Buttons
   $("#btn-emergency-back")?.addEventListener("click", () => show("screen-response"));
-  $("#btn-emergency-continue")?.addEventListener("click", () => {
-    if (notReady.length) { alert("Everyone must be 'Interested' to open the Roadmap."); return; }
+  $("#btn-emergency-continue")?.addEventListener("click", async () => {
+    const latest = await fbGetResponsesOnce();
+    const missing = PEOPLE.filter(p => (latest[p.code]?.status || "Pending") !== "Interested");
+    if (missing.length) { alert("Everyone must be 'Interested' to open the Roadmap."); return; }
     show("day-1");
   });
 }
 
 /* ===== Navigation for Next/Previous buttons ===== */
 function wireNavigation(){
-  document.body.addEventListener("click", (e)=>{
+  document.body.addEventListener("click", async (e)=>{
     const btn = e.target.closest("[data-goto]");
     if (!btn) return;
     const target = btn.getAttribute("data-goto");
 
     if (target === "day-1") {
-      // entering roadmap → enforce gate
-      const responses = readResponses();
-      const notReady = PEOPLE.filter(p => (responses[p.code]?.status || "Pending") !== "Interested");
+      // enforce gate using latest shared data
+      const latest = await fbGetResponsesOnce();
+      const notReady = PEOPLE.filter(p => (latest[p.code]?.status || "Pending") !== "Interested");
       if (notReady.length) { alert("Everyone must be 'Interested' to open the Roadmap."); return; }
     }
     show(target);
   });
-}
-
-/* ===== Storage helpers ===== */
-function readResponses() {
-  try { return JSON.parse(localStorage.getItem(LS_RESPONSES) || "{}"); }
-  catch { return {}; }
 }

@@ -59,7 +59,7 @@ tbody tr:last-child td{border-bottom:0}
 .contact{display:flex;gap:14px;align-items:center;background:#fff;border:1px solid #eee;border-radius:16px;padding:14px}
 .contact img{width:64px;height:64px;border-radius:50%}
 .contact-name{font-weight:800}
-.contact-role,.contact-line{color:var(--muted);font-size:14px}
+.contact-role,.contact-line{color:#666;font-size:14px}
 .mt{margin-top:16px}
 
 .bullets{margin:8px 0 0 0}

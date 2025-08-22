@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,7 +19,7 @@
 
         <div class="card">
           <h3 class="loud">
-            “IF YOU ARE READY TO THROW RUNNING COMMENTS DURING TRIP, RIGHTNOW YOU NEED TO TAKE THE
+            “IF YOU ARE READY TO THROW RUNNING COMMENTS DURING TRIP, RIGHT NOW YOU NEED TO TAKE THE
             INITIATIVE TO MAKE THE PLAN FOR THE TRIP.”
           </h3>
 
@@ -33,9 +34,8 @@
 
           <div class="note">
             <strong>Note from the Organizer:</strong>
-            <p>We are a group of 17 people. Based on my knowledge, research from the internet, advice from others,
-            and careful consideration of budget and time management, I have invested a lot of effort into preparing
-            this trip plan.</p>
+            <p>We are a group of 17 people. Based on my knowledge, online research, advice from others,
+            and careful consideration of budget and time management, a lot of effort went into this trip plan.</p>
           </div>
 
           <button id="btn-start-continue" class="btn primary" disabled>Continue</button>
@@ -117,10 +117,7 @@
             <li>13:15 – Sand Harbor Beach (2–3 hrs)</li>
             <li>16:00–17:00 – Return / relax</li>
           </ul>
-          <div class="row">
-            <button data-goto="screen-emergency" class="btn">Previous Day</button>
-            <button data-goto="day-2" class="btn primary">Next Day</button>
-          </div>
+          <div class="row"><button data-goto="screen-emergency" class="btn">Previous Day</button><button data-goto="day-2" class="btn primary">Next Day</button></div>
         </div>
       </div>
     </section>
@@ -130,18 +127,15 @@
         <h2>🧭 SAN FRANCISCO – DAY 2</h2>
         <div class="card">
           <h3>🏡 Airbnb</h3>
-          <p>Sept 16 (Tuesday night check-in) → Sept 18 (Thursday checkout)</p>
+          <p>Sept 16 (Tue night) → Sept 18 (Thu checkout)</p>
           <p><strong>Location:</strong> South San Francisco • <strong>Cost:</strong> $1360 (2 nights)</p>
           <h3>🕰️ Itinerary</h3>
           <ul class="bullets">
-            <li>09:00–11:00 – Golden Gate Bridge (walk, photos)</li>
-            <li>11:30–12:30 – Sister Cities Plaza & Civic Center stroll</li>
+            <li>09:00–11:00 – Golden Gate Bridge</li>
+            <li>11:30–12:30 – Sister Cities Plaza & Civic Center</li>
             <li>13:00–17:00 – Fisherman’s Wharf & Pier 39</li>
           </ul>
-          <div class="row">
-            <button data-goto="day-1" class="btn">Previous Day</button>
-            <button data-goto="day-3" class="btn primary">Next Day</button>
-          </div>
+          <div class="row"><button data-goto="day-1" class="btn">Previous Day</button><button data-goto="day-3" class="btn primary">Next Day</button></div>
         </div>
       </div>
     </section>
@@ -151,7 +145,7 @@
         <h2>🌊 COASTAL DRIVE – DAY 3</h2>
         <div class="card">
           <h3>Distances & Drive Times</h3>
-          <p>SF → Half Moon Bay: ~30 mi / 45 min • HMB → Santa Cruz: ~50 mi / 1 hr • Santa Cruz → Big Sur: ~70 mi / 2 hrs</p>
+          <p>SF → Half Moon Bay: ~45 min • HMB → Santa Cruz: ~1 hr • Santa Cruz → Big Sur: ~2 hrs</p>
           <h3>🕰️ Itinerary</h3>
           <ul class="bullets">
             <li>08:00–09:00 – Drive SF → Half Moon Bay</li>
@@ -161,10 +155,7 @@
             <li>14:00–16:00 – Hwy 1 → Big Sur (photo stops)</li>
             <li>16:00–18:00 – Bixby Bridge / Pfeiffer Beach / McWay Falls</li>
           </ul>
-          <div class="row">
-            <button data-goto="day-2" class="btn">Previous Day</button>
-            <button data-goto="day-4" class="btn primary">Next Day</button>
-          </div>
+          <div class="row"><button data-goto="day-2" class="btn">Previous Day</button><button data-goto="day-4" class="btn primary">Next Day</button></div>
         </div>
       </div>
     </section>
@@ -174,7 +165,7 @@
         <h2>🌴 LOS ANGELES – DAY 4</h2>
         <div class="card">
           <h3>🏡 Airbnb</h3>
-          <p>Sept 18 (Thursday check-in) → Sept 19 (Friday checkout)</p>
+          <p>Sept 18 (Thu) → Sept 19 (Fri)</p>
           <p><strong>Location:</strong> Culver City • <strong>Cost:</strong> $768 (1 night)</p>
           <h3>🕰️ Itinerary</h3>
           <ul class="bullets">
@@ -182,10 +173,7 @@
             <li>Afternoon – Manhattan Beach</li>
             <li>Evening – Long Beach</li>
           </ul>
-          <div class="row">
-            <button data-goto="day-3" class="btn">Previous Day</button>
-            <button data-goto="day-5" class="btn primary">Next Day</button>
-          </div>
+          <div class="row"><button data-goto="day-3" class="btn">Previous Day</button><button data-goto="day-5" class="btn primary">Next Day</button></div>
         </div>
       </div>
     </section>
@@ -225,15 +213,31 @@
             <li><strong>Jeep Grand Cherokee L or Similar (7-Seater)</strong> – Car: $432 • Insurance: $236 • <strong>Total:</strong> $668</li>
           </ul>
           <p class="muted"><strong>Grand Total:</strong> $1694 – $1770 (final amount may vary slightly)</p>
-          <div class="row">
-            <button data-goto="day-5" class="btn">Previous Day</button>
-            <button data-goto="screen-start" class="btn">Back to Start</button>
-          </div>
+          <div class="row"><button data-goto="day-5" class="btn">Previous Day</button><button data-goto="screen-start" class="btn">Back to Start</button></div>
         </div>
       </div>
     </section>
 
   </main>
+
+  <!-- Firebase (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
+  <script>
+    // 🔧 Fill these with your Firebase project's values
+    // Project settings → General → Your apps → Web app (include databaseURL from Realtime Database)
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.REGION.firebasedatabase.app",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    // Initialize Firebase (safe even if run once)
+    firebase.initializeApp(firebaseConfig);
+  </script>
 
   <script src="script.js"></script>
 </body>
